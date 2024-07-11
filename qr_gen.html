@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Termin QR-Code Generator</title>
+  <style>
+    #qrcode {
+      margin-top: 20px;
+    }
+    .slogan {
+      color: red;
+      text-align: center;
+      font-weight: bold;
+      margin-top: 10px;
+      margin-bottom: 20px;
+    }
+    .center {
+      text-align: center;
+    }
+  </style>
+  <!-- Include QRCode library from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script>
+    function generateQRCode() {
+      var title = document.getElementById('termin-titel').value;
+      var date = document.getElementById('termin-datum').value;
+      var startHour = document.getElementById('termin-stunde').value;
+      var startMinute = document.getElementById('termin-minute').value;
+      var durationHours = parseInt(document.getElementById('termin-dauer-stunde').value, 10);
+      var durationMinutes = parseInt(document.getElementById('termin-dauer-minute').value, 10);
+
+      var missingFields = [];
+
+      if (!title) {
+        missingFields.push('Titel');
+      }
+      if (!date) {
+        missingFields.push('Datum');
+      }
+      if (!startHour) {
+        missingFields.push('Startzeit (Stunde)');
+      }
+      if (!startMinute) {
+        missingFields.push('Startzeit (Minute)');
+      }
+      if (!durationMinutes && durationHours === 0) {
+        missingFields.push('Dauer (Minute)');
+      }
+
+      if (missingFields.length > 0) {
+        var errorMessage = 'Bitte füllen Sie folgende Felder aus:\n\n';
+        errorMessage += missingFields.join('\n');
+        alert(errorMessage);
+        return;
+      }
+
+      // Calculate start date/time in ISO format
+      var startDateTime = date.replace(/-/g, '') + 'T' + startHour + startMinute + '00';
+
+      // Calculate end date/time by adding duration
+      var endTime = new Date(date + 'T' + startHour + ':' + startMinute);
+      endTime.setHours(endTime.getHours() + durationHours);
+      endTime.setMinutes(endTime.getMinutes() + durationMinutes);
+      var endDateTime = endTime.toISOString().replace(/[-:]/g, '').slice(0, -5) + 'Z';
+
+      // Create the ICS data string
+      var icsData = `BEGIN:VEVENT
+SUMMARY:${title}
+DTSTART:${startDateTime}
+DTEND:${endDateTime}
+URL:https://www.zahnaerzte-buedingen.de/kontakt
+DESCRIPTION:https://www.zahnaerzte-buedingen.de/kontakt
+LOCATION:Bei der Kirche 1, Buedingen-Duedelsheim
+END:VEVENT`;
+
+      var qrcodeContainer = document.getElementById('qrcode');
+
+      // Clear previous QR code
+      qrcodeContainer.innerHTML = '';
+
+      // Generate new QR code
+      new QRCode(qrcodeContainer, {
+        text: icsData,
+        width: 256,
+        height: 256
+      });
+
+      // Show reset button
+      document.getElementById('reset-btn').style.display = 'inline-block';
+      document.getElementById('generate-qr-btn').style.display = 'none';
+    }
+
+    function resetForm() {
+      // Clear input fields and QR code
+      document.getElementById('termin-titel').value = 'Zahnarzt'; // Set default value to "Zahnarzt"
+      document.getElementById('termin-datum').value = '';
+      document.getElementById('termin-stunde').value = '00';
+      document.getElementById('termin-minute').value = '00';
+      document.getElementById('termin-dauer-stunde').value = '00'; // Set default duration hours to 0
+      document.getElementById('termin-dauer-minute').value = '00';
+      document.getElementById('qrcode').innerHTML = '';
+
+      // Hide reset button
+      document.getElementById('reset-btn').style.display = 'none';
+      document.getElementById('generate-qr-btn').style.display = 'inline-block';
+    }
+
+    function populateHours() {
+      var hourSelect = document.getElementById('termin-stunde');
+      for (let i = 6; i < 20; i++) {
+        let hour = (i < 10 ? '0' : '') + i;
+        hourSelect.options.add(new Option(hour, hour));
+      }
+    }
+
+    window.onload = function() {
+      populateHours();
+      populateDurationHours();
+      // Set default value for title
+      document.getElementById('termin-titel').value = 'Zahnarzt';
+    };
+
+    function populateDurationHours() {
+      var hourSelect = document.getElementById('termin-dauer-stunde');
+      hourSelect.options.add(new Option('00', '00', true, true)); // Add default option selected
+      for (let i = 1; i < 7; i++) {
+        let hour = (i < 10 ? '0' : '') + i;
+        hourSelect.options.add(new Option(hour, hour));
+      }
+    }
+  </script>
+</head>
+<body>
+  <div class="left">
+    <img src="https://www.zahnaerzte-buedingen.de/files/zahnaerzte_wiesbaden/img/buedingen/ZAR_Buedingen_Logozeichen.svg" alt="Logo" width="200" height="200" style="display:block; margin-bottom:10px;" class="left">
+    <div class="text">Zahnärzte Büdingen</div>
+    
+    <label for="termin-titel">Titel:</label>
+    <input type="text" id="termin-titel" name="termin-titel" value="Zahnarzt"><br><br>
+
+    <label for="termin-datum">Datum:</label>
+    <input type="date" id="termin-datum" name="termin-datum"><br><br>
+
+    <label for="termin-zeit">Startzeit:</label>
+    <div style="display: inline-block;">
+      <select id="termin-stunde" name="termin-stunde"></select> :
+      <select id="termin-minute" name="termin-minute">
+        <option value="00">00</option>
+        <option value="15">15</option>
+        <option value="30">30</option>
+        <option value="45">45</option>
+      </select>
+    </div><br><br>
+
+    <label for="termin-dauer">Dauer:</label>
+    <div style="display: inline-block;">
+      <select id="termin-dauer-stunde" name="termin-dauer-stunde"></select> Stunden
+      <select id="termin-dauer-minute" name="termin-dauer-minute">
+        <option value="00">00</option>
+        <option value="15">15</option>
+        <option value="30">30</option>
+        <option value="45">45</option>
+      </select> Minuten
+    </div><br><br>
+
+    <button id="generate-qr-btn" onclick="generateQRCode()">QR-Code generieren</button>
+    <button id="reset-btn" style="display:none;" onclick="resetForm()">Zurücksetzen</button>
+  </div>
+
+  <div id="qrcode"></div>
+</body>
+</html>
